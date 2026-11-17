@@ -129,7 +129,6 @@ export default function Footer() {
             ))}
           </ul>
 
-          {/* Link columns */}
           <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:gap-x-16">
             {linkGroups.map((group, i) => (
               <motion.nav
@@ -157,7 +156,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom bar: simple fade, no movement */}
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -165,7 +163,7 @@ export default function Footer() {
           transition={{ duration: 0.9, delay: 0.2, ease }}
           className="mt-14 flex flex-col gap-2 border-t border-[#F7F6F2]/15 py-6 text-sm text-[#F7F6F2]/75 sm:flex-row sm:items-center sm:justify-between md:mt-20 md:text-base"
         >
-          <p>© {new Date().getFullYear()} HueEstate. All rights reserved.</p>
+          <p>© 2026 HueEstate. All rights reserved.</p>
           <p>Designed by Kalid Abdifeta.</p>
         </motion.div>
       </div>

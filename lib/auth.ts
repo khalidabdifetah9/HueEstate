@@ -2,7 +2,7 @@ import { resetPasswordEmail, sendEmail } from "@/lib/email";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { db, user, session, account, verification } from "@workspace/db";
+import { db, user, session, account, verification } from "@/db";
 
 export const auth = betterAuth({
   basePath: "/auth",
