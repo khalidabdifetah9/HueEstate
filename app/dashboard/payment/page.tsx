@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
@@ -7,7 +8,6 @@ import { db, houses, orders, reservations } from "@/db";
 import { auth } from "@/lib/auth";
 import { settleOrder } from "@/lib/payments";
 import PrintButton from "@/components/payment/PrintButton";
-
 
 export const metadata: Metadata = { title: "Payment | HueEstate" };
 
@@ -19,7 +19,7 @@ const when = (d: Date | null) =>
     ? d.toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })
     : "—";
 
-export default async function PaymentResultPage({
+async function PaymentResultContent({
   searchParams,
 }: {
   searchParams: Promise<{ ref?: string }>;
@@ -54,7 +54,6 @@ export default async function PaymentResultPage({
   if (!row) redirect("/dashboard");
   const { reservation, house } = row;
 
-  // --- Not paid yet ---
   if (order.status === "PENDING") {
     return (
       <Message
@@ -72,7 +71,6 @@ export default async function PaymentResultPage({
     );
   }
 
-  // --- Failed ---
   if (order.status === "FAILED") {
     return (
       <Message
@@ -90,7 +88,6 @@ export default async function PaymentResultPage({
     );
   }
 
-  // --- Paid, but the house was taken first (rare) ---
   if (reservation.status === "cancelled") {
     return (
       <Message
@@ -108,7 +105,6 @@ export default async function PaymentResultPage({
     );
   }
 
-  // --- Receipt ---
   const rows: [string, string][] = [
     ["Receipt no.", order.merchantReference],
     ["Paid on", when(order.paidAt)],
@@ -159,7 +155,7 @@ export default async function PaymentResultPage({
               className="flex justify-between gap-6 py-3 text-sm"
             >
               <dt className="text-[#243D35]/60">{label}</dt>
-              <dd className="min-w-0 break-words text-right font-medium">
+              <dd className="min-w-0 wrap-break-words text-right font-medium">
                 {value}
               </dd>
             </div>
@@ -186,6 +182,24 @@ export default async function PaymentResultPage({
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function PaymentResultPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-lg rounded-2xl bg-white p-8 text-center text-[#243D35]/70">
+          Verifying payment status...
+        </div>
+      }
+    >
+      <PaymentResultContent searchParams={searchParams} />
+    </Suspense>
   );
 }
 

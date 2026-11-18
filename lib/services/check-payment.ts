@@ -20,6 +20,6 @@ export async function checkPayment(reference: string): Promise<"SUCCESS" | "PEND
     return settled.status;
   } catch (e) {
     console.warn("checkPayment failed:", e);
-    return "PENDING"; // treat as "not yet", the next check will retry
+    return "PENDING";
   }
 }
