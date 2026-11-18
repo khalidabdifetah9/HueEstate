@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { bookAppointment, cancelAppointment } from "@/actions/schedule";
+import { bookAppointment, cancelAppointment } from "@/lib/api-client";
 import { MAX_UPCOMING, formatTime, fromKey, isSlotPast, timeSlots } from "@/lib/schedule";
 import Calendar from "./Calendar";
 import TimeSlots from "./TimeSlots";

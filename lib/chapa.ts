@@ -45,6 +45,7 @@ export async function createHostedCheckout(input: HostedInput) {
   }
 
   const checkoutUrl: string = json.data.checkout_url;
+  console.log(checkoutUrl)
   // The last part of the checkout URL is Chapa's own payment reference
   const chapaReference = checkoutUrl.split("/").filter(Boolean).pop() ?? null;
   return { checkoutUrl, chapaReference };

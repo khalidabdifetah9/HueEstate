@@ -4,7 +4,7 @@ import AdminActivity from "@/components/admin/AdminActivity";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { appointments, db, houses, orders, reservations } from "@workspace/db";
+import { appointments, db, houses, orders, reservations } from "@/db";
 import { auth } from "@/lib/auth";
 import { expireStaleReservations } from "@/lib/payments";
 import { businessNow, formatTime, fromKey } from "@/lib/schedule";

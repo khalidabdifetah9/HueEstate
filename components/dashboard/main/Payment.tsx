@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { reserveHouse } from "@/actions/reserve";
-import { checkPayment } from "@/actions/check-payment";
+import { reserveHouse } from "@/lib/api-client";
+import { checkPayment } from "@/lib/api-client";
 import {
   MAX_DAYS,
   MIN_DAYS,
@@ -22,6 +22,7 @@ export default function Payment({ status, houseId, houseName }: PaymentProps) {
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
+  const [openedAt, setOpenedAt] = useState<number | null>(null);
   const [days, setDays] = useState(MIN_DAYS);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -79,6 +80,7 @@ export default function Payment({ status, houseId, houseName }: PaymentProps) {
     setLoading(false);
     setError("");
     setWaitingRef(null);
+    setOpenedAt(Date.now());
     setOpen(true);
   }
 
@@ -115,17 +117,17 @@ export default function Payment({ status, houseId, houseName }: PaymentProps) {
     }
   }
 
-  // Shown only once the pop-up is open, so the date can't mismatch on hydration
-  const reservedUntil = open
-    ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString(
-        "en-US",
-        {
-          weekday: "short",
-          month: "long",
-          day: "numeric",
-        },
-      )
-    : "";
+  const reservedUntil =
+    open && openedAt !== null
+      ? new Date(openedAt + days * 24 * 60 * 60 * 1000).toLocaleDateString(
+          "en-US",
+          {
+            weekday: "short",
+            month: "long",
+            day: "numeric",
+          },
+        )
+      : "";
 
   return (
     <>

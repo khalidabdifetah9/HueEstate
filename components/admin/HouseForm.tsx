@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createHouse, updateHouse } from "@/actions/admin";
+import { createHouse, updateHouse } from "@/lib/api-client";
 import { slugify } from "@/lib/admin-schema";
 import type { HouseData } from "@/lib/admin-schema";
 import ImageField from "./ImageField";

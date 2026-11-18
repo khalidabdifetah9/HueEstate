@@ -10,14 +10,22 @@ interface Props {
   hint?: string;
   kind: UploadKind;
   houseId: string;
-  value: string | null; // the saved image key
+  value: string | null;
   onChange: (key: string | null) => void;
   onBusyChange?: (busy: boolean) => void;
 }
 
 const MAX_MB = { panorama: 25, mask: 25, thumb: 3 } as const;
 
-export default function ImageField({ label, hint, kind, houseId, value, onChange, onBusyChange }: Props) {
+export default function ImageField({
+  label,
+  hint,
+  kind,
+  houseId,
+  value,
+  onChange,
+  onBusyChange,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -26,8 +34,8 @@ export default function ImageField({ label, hint, kind, houseId, value, onChange
     if (!file) return;
     setError("");
 
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      setError("Please choose a JPG or PNG image.");
+    if (!["image/png", "image/jpeg", "image/avif"].includes(file.type)) {
+      setError("Please choose a JPG, PNG or AVIF image.");
       return;
     }
     if (file.size > MAX_MB[kind] * 1024 * 1024) {
@@ -100,21 +108,36 @@ export default function ImageField({ label, hint, kind, houseId, value, onChange
             kind === "thumb" ? "aspect-3/2" : "aspect-2/1"
           }`}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />
           </svg>
-          {uploading ? `Uploading ${progress}%` : "Click to upload"}
+          {uploading ? "Uploading..." : "Click to upload"}
         </button>
       )}
 
       {uploading && url && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#243D35]/10">
-          <div className="h-full bg-[#243D35] transition-all" style={{ width: `${progress}%` }} />
+          <div
+            className="h-full bg-[#243D35] transition-all"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       )}
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {hint && !error && <p className="mt-2 text-xs text-[#243D35]/50">{hint}</p>}
+      {hint && !error && (
+        <p className="mt-2 text-xs text-[#243D35]/50">{hint}</p>
+      )}
     </div>
   );
 }

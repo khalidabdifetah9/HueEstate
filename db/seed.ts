@@ -1,7 +1,39 @@
-import { db } from "./index";
-import { houses } from "./schema";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import { db} from "./index";
+import { houseRooms, houses, roomHotspots } from "./schema";
+import { eq } from "drizzle-orm";
 
-const seedHouses: (typeof houses.$inferInsert)[] = [
+interface SeedHotspot { to: string; label: string; pitch: number; yaw: number }
+interface SeedRoom {
+  slug: string;
+  name: string;
+  panorama: string;
+  mask?: string;
+  startPitch?: number;
+  startYaw?: number;
+  hotspots: SeedHotspot[];
+}
+interface SeedHouse {
+  id: string;
+  name: string;
+  type: string;
+  status: "For Sale" | "For Rent";
+  location: string;
+  price: number;
+  sqft: number;
+  bedrooms: number;
+  bathrooms: number;
+  garage: string;
+  yearBuilt: number;
+  lotSize: string;
+  description: string;
+  features: string[];
+  rooms: SeedRoom[];
+}
+
+const seedHouses: SeedHouse[] = [
   {
     id: "maple",
     name: "Bole Haven Residence",
@@ -24,7 +56,23 @@ const seedHouses: (typeof houses.$inferInsert)[] = [
       "Bedroom fireplace",
       "En-suite bathroom",
     ],
-    thumb: "/rooms/360/livingroom_forbed.png",
+    rooms: [
+      {
+        slug: "living",
+        name: "Living Room",
+        panorama: "/rooms/360/livingroom_forbed.avif",
+        mask: "/rooms/mask/ulebombo_wall_mask.avif",
+        hotspots: [{ to: "bedroom", label: "Master Bedroom", pitch: -4, yaw: -110 }],
+      },
+      {
+        slug: "bedroom",
+        name: "Master Bedroom",
+        panorama: "/rooms/360/bedroom.avif",
+        mask: "/rooms/mask/lythwood_wall_mask_hires.avif",
+        startYaw: -90,
+        hotspots: [{ to: "living", label: "Living Room", pitch: -5, yaw: 248 }],
+      },
+    ],
   },
   {
     id: "lakeside",
@@ -48,7 +96,23 @@ const seedHouses: (typeof houses.$inferInsert)[] = [
       "Walk-in shower and corner bathtub",
       "Skylight in bathroom",
     ],
-    thumb: "/rooms/360/living.png",
+    rooms: [
+      {
+        slug: "lounge",
+        name: "Lounge",
+        panorama: "/rooms/360/living.avif",
+        mask: "/rooms/mask/living.avif",
+        hotspots: [{ to: "bathroom", label: "Bath Room", pitch: -3, yaw: 248 }],
+      },
+      {
+        slug: "bathroom",
+        name: "Bath Room",
+        panorama: "/rooms/360/bathroom.avif",
+        mask: "/rooms/mask/bathforliving.avif",
+        startYaw: 120,
+        hotspots: [{ to: "lounge", label: "Lounge", pitch: -3, yaw: 120 }],
+      },
+    ],
   },
   {
     id: "office",
@@ -71,7 +135,15 @@ const seedHouses: (typeof houses.$inferInsert)[] = [
       "Easy-clean glossy tile floor",
       "Plenty of wall sockets",
     ],
-    thumb: "/rooms/360/office.jpg",
+    rooms: [
+      {
+        slug: "main-hall",
+        name: "Main Living Area",
+        panorama: "/rooms/360/office.jpg",
+        mask: "/rooms/mask/office_wall_mask.avif",
+        hotspots: [],
+      },
+    ],
   },
   {
     id: "cedar-crest",
@@ -88,13 +160,16 @@ const seedHouses: (typeof houses.$inferInsert)[] = [
     lotSize: "Apartment unit",
     description:
       "A single open great room with plain, paintable walls that connects to a kitchen and an outdoor patio. It is designed as a flexible studio where living, sleeping and dining share one space, ready to be personalised with your own wall colours.",
-    features: [
-      "Open great room",
-      "Connected kitchen",
-      "Outdoor patio access",
-      "Paintable walls",
+    features: ["Open great room", "Connected kitchen", "Outdoor patio access", "Paintable walls"],
+    rooms: [
+      {
+        slug: "great-room",
+        name: "Great Room",
+        panorama: "/rooms/360/single_room.avif",
+        mask: "/rooms/mask/single2_mask.avif",
+        hotspots: [], // the old kitchen and patio hotspots pointed to rooms that don't exist
+      },
     ],
-    thumb: "/rooms/360/single_room.png",
   },
   {
     id: "whispering-pines",
@@ -118,20 +193,201 @@ const seedHouses: (typeof houses.$inferInsert)[] = [
       "Two bedrooms and a bathroom",
       "Plenty of natural light",
     ],
-    thumb: "/rooms/360/smallhouse.png",
+    rooms: [
+      {
+        slug: "living-room",
+        name: "Living Room",
+        panorama: "/rooms/360/smallhouse.avif",
+        mask: "/rooms/mask/r1_mask.avif",
+        hotspots: [
+          { to: "room1", label: "Room 1", pitch: -4, yaw: 123 },
+          { to: "room2", label: "Room 2", pitch: -3, yaw: -105 },
+          { to: "bathroom", label: "Bath Room", pitch: -3, yaw: 155 },
+        ],
+      },
+      {
+        slug: "room1",
+        name: "Room 1",
+        panorama: "/rooms/360/room1.avif",
+        mask: "/rooms/mask/r2_mask.avif",
+        hotspots: [{ to: "living-room", label: "Living Room", pitch: -5, yaw: -250 }],
+      },
+      {
+        slug: "room2",
+        name: "Room 2",
+        panorama: "/rooms/360/room1.avif",
+        mask: "/rooms/mask/r2_mask.avif",
+        startYaw: 75,
+        hotspots: [{ to: "living-room", label: "Living Room", pitch: -4, yaw: -250 }],
+      },
+      {
+        slug: "bathroom",
+        name: "Bath Room",
+        panorama: "/rooms/360/bathroom_for_smallhouse.avif",
+        mask: "/rooms/mask/bathroom_wall_mask.avif",
+        startYaw: 45,
+        hotspots: [{ to: "living-room", label: "Living Room", pitch: -4, yaw: 80 }],
+      },
+    ],
   },
 ];
 
+/* ---------------- finding your files ---------------- */
+
+const MIME: Record<string, string> = {
+  avif: "image/avif",
+  webp: "image/webp",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+};
+
+const index = new Map<string, Map<string, string>>();
+
+async function walk(dir: string) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await walk(full);
+      continue;
+    }
+    const ext = path.extname(entry.name).slice(1).toLowerCase();
+    if (!(ext in MIME)) continue;
+
+    const name = path.basename(entry.name, path.extname(entry.name)).toLowerCase();
+    const folder = path.basename(path.dirname(full)).toLowerCase();
+    const id = `${folder}/${name}`;
+    const byExt = index.get(id) ?? new Map<string, string>();
+    byExt.set(ext, full);
+    index.set(id, byExt);
+  }
+}
+function findFile(publicPath: string, kind: "panorama" | "mask") {
+  const parsed = path.posix.parse(publicPath);
+  const id = `${path.posix.basename(parsed.dir).toLowerCase()}/${parsed.name.toLowerCase()}`;
+  const byExt = index.get(id);
+  if (!byExt) return null;
+
+  const order = kind === "mask" ? ["png", "avif", "webp", "jpg", "jpeg"] : ["avif", "webp", "jpg", "jpeg", "png"];
+  for (const ext of order) {
+    const file = byExt.get(ext);
+    if (file) return { file, ext };
+  }
+  return null;
+}
+
+
 async function main() {
-  // Upsert: running this again updates existing rows instead of failing
-  for (const house of seedHouses) {
-    await db
-      .insert(houses)
-      .values(house)
-      .onConflictDoUpdate({ target: houses.id, set: house });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SECRET_KEY;
+  const bucket = process.env.NEXT_PUBLIC_MEDIA_BUCKET ?? "huestate-media";
+  if (!url || !serviceKey || !process.env.DATABASE_URL) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY or DATABASE_URL in .env");
   }
 
-  console.log(`Seeded ${seedHouses.length} houses`);
+  const storage = createClient(url, serviceKey, { auth: { persistSession: false } }).storage.from(bucket);
+
+  await walk(path.join(process.cwd(), "public"));
+
+  const files = new Map<string, { file: string; ext: string }>();
+  const missing: string[] = [];
+
+  for (const h of seedHouses) {
+    for (const r of h.rooms) {
+      const wanted = [
+        ["panorama", r.panorama],
+        ["mask", r.mask],
+      ] as const;
+      for (const [kind, p] of wanted) {
+        if (!p) continue;
+        const found = findFile(p, kind);
+        if (found) files.set(`${h.id}|${p}`, found);
+        else missing.push(p);
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    console.error("\nThese files were not found under public/ (folder + name, any extension):");
+    for (const m of [...new Set(missing)]) console.error("  -", m);
+    console.error("\nCheck that the folders are named 360 and mask and the file names match.");
+    process.exit(1);
+  }
+
+  const uploaded = new Set<string>();
+
+  async function upload(houseId: string, kind: "panorama" | "mask", publicPath: string) {
+    const found = files.get(`${houseId}|${publicPath}`)!;
+    const name = path
+      .basename(found.file, path.extname(found.file))
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const key = `houses/${houseId}/${kind}/${name}.${found.ext}`;
+
+    if (uploaded.has(key)) return key;
+
+    const { error } = await storage.upload(key, await readFile(found.file), {
+      contentType: MIME[found.ext],
+      upsert: true,
+      cacheControl: "86400",
+    });
+    if (error) throw new Error(`Upload failed for ${key}: ${error.message}`);
+
+    uploaded.add(key);
+    console.log("uploaded", key);
+    return key;
+  }
+
+  for (const h of seedHouses) {
+    const { rooms, id, ...info } = h;
+
+    const roomKeys = [];
+    for (const r of rooms) {
+      roomKeys.push({
+        panoramaKey: await upload(id, "panorama", r.panorama),
+        maskKey: r.mask ? await upload(id, "mask", r.mask) : null,
+      });
+    }
+    const thumb = roomKeys[0].panoramaKey;
+
+    await db
+      .insert(houses)
+      .values({ id, ...info, thumb, published: true })
+      .onConflictDoUpdate({ target: houses.id, set: { ...info, thumb, published: true } });
+    await db.delete(houseRooms).where(eq(houseRooms.houseId, id));
+
+    for (const [i, r] of rooms.entries()) {
+      const [room] = await db
+        .insert(houseRooms)
+        .values({
+          houseId: id,
+          slug: r.slug,
+          name: r.name,
+          panoramaKey: roomKeys[i].panoramaKey,
+          maskKey: roomKeys[i].maskKey,
+          startPitch: r.startPitch ?? null,
+          startYaw: r.startYaw ?? null,
+          position: i,
+        })
+        .returning({ id: houseRooms.id });
+
+      if (r.hotspots.length > 0) {
+        await db.insert(roomHotspots).values(
+          r.hotspots.map((s) => ({
+            roomId: room.id,
+            toSlug: s.to,
+            label: s.label,
+            pitch: s.pitch,
+            yaw: s.yaw,
+          }))
+        );
+      }
+    }
+    console.log(`✔ ${h.name}`);
+  }
+
+  console.log("Done");
   process.exit(0);
 }
 

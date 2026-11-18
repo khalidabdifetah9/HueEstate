@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq, desc } from "drizzle-orm";
-import { db, houses, orders, reservations } from "@workspace/db";
+import { db, houses, orders, reservations } from "@/db";
 import { auth } from "@/lib/auth";
 import { settleOrder } from "@/lib/payments";
 import PrintButton from "@/components/payment/PrintButton";

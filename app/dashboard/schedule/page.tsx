@@ -2,7 +2,7 @@ import type {Metadata} from "next"
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, asc, eq, gte } from "drizzle-orm";
-import { appointments, db, houses } from "@workspace/db";
+import { appointments, db, houses } from "@/db";
 import { auth } from "@/lib/auth";
 import { businessNow } from "@/lib/schedule";
 import ScheduleBooking from "@/components/dashboard/schedule/ScheduleBooking";

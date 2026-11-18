@@ -75,6 +75,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.decoding = "async";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Could not load ${src}`));
+    img.crossOrigin = "anonymous";
     img.src = src;
   });
 }

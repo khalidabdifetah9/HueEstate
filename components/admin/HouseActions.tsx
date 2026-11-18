@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteHouse, setPublished } from "@/actions/admin";
+import { deleteHouse, setPublished } from "@/lib/api-client";
 
 interface Props {
   id: string;
