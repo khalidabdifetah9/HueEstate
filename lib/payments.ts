@@ -1,6 +1,6 @@
 import { and, eq, lt } from "drizzle-orm";
-import { db, orders, reservations } from "@workspace/db";
-import type { Order } from "@workspace/db";
+import { db, orders, reservations } from "@/db";
+import type { Order } from "@/db";
 import { verifyPayment } from "./chapa";
 
 // Holds whose time is over stop blocking the house

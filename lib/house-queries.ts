@@ -1,5 +1,5 @@
 import { asc,eq } from "drizzle-orm";
-import { db, houseRooms, houses, roomHotspots } from "@workspace/db";
+import { db, houseRooms, houses, roomHotspots } from "@/db";
 import type { House } from "./houses";
 import { mediaUrl } from "./storage";
 

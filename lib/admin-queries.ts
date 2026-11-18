@@ -8,7 +8,7 @@ import {
   reservations,
   roomHotspots,
   user,
-} from "@workspace/db";
+} from "@/db";
 import type { HouseData } from "./admin-schema";
 import { mediaUrl } from "./media-url";
 import { getAdminSession } from "./admin";
