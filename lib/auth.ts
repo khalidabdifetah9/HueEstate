@@ -5,7 +5,6 @@ import { nextCookies } from "better-auth/next-js";
 import { db, user, session, account, verification } from "@/db";
 
 export const auth = betterAuth({
-  basePath: "/auth",
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: process.env.BETTER_AUTH_URL
